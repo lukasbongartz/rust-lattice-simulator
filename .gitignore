@@ -1,0 +1,6 @@
+/target
+/data/
+/figures/
+*.csv
+*.parquet
+.DS_Store
