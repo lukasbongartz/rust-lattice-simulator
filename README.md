@@ -7,7 +7,7 @@ A fast, interactive 2D lattice phase-transition simulator written in Rust. It vi
 - CSV export of time series and lattice snapshots
 - GPU-friendly rendering via `macroquad`
 
-![Screenshot of the simulator](screenshot.png)
+![Screenshot](screenshot.png)
 
 ## Getting Started
 
@@ -43,7 +43,11 @@ Press `S` while the app is running to save a CSV snapshot of the time series in 
 
 - Lattice gas with nearest-neighbor interaction `J`
 - Glauber dynamics Monte Carlo updates
-- Mean-field functional \( f_{tc}(\rho) = (2J\rho^2 + \mu\rho)/T - [\rho\ln\rho + (1-\rho)\ln(1-\rho)] \)
+- Mean-field functional:
+
+  $$
+  f_{tc}(\rho) = \frac{2J\rho^2 + \mu\rho}{T} - \left[ \rho\ln\rho + (1-\rho)\ln(1-\rho) \right]
+  $$
 
 ## Data Export
 
