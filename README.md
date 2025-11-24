@@ -11,32 +11,49 @@ A fast, interactive 2D lattice phase-transition simulator written in Rust. It vi
 
 ## Getting Started
 
-### Prerequisites
+### Web Version (No Installation Required)
+
+The simulation is available as a WebAssembly app. See the `web-deploy/` directory for deployment-ready files.
+
+**Local testing:**
+```bash
+cd web-deploy
+python3 -m http.server 8000
+# Open http://localhost:8000
+```
+
+### Desktop Version
+
+**Prerequisites:**
 - Rust (stable). Install via `rustup`.
 - macOS/Linux/Windows supported.
 
-### Build and Run (GUI)
-
+**Build and run:**
 ```bash
-# Run the interactive app
 cargo run
 ```
 
-Controls:
-- Arrow keys: change `T` (Up/Down) and `µ` (Left/Right)
-- Space: randomize lattice
-- M: cycle panel (UI → Phase diagram → Free-energy plot)
-- D: toggle density popup
-- S: save CSV snapshot to working directory
+**Build for web:**
+```bash
+cargo build --release --target wasm32-unknown-unknown
+cp target/wasm32-unknown-unknown/release/phase_simulation.wasm web-deploy/
+```
 
-### Export CSV
+### Controls
 
-Press `S` while the app is running to save a CSV snapshot of the time series in the current working directory.
+- **↑/↓** - Adjust Temperature
+- **←/→** - Adjust Chemical Potential
+- **Space** - Randomize Grid
+- **M** - Cycle display modes (UI → Phase diagram → Free-energy plot)
+- **D** - Toggle density popup
+- **S** - Save CSV snapshot
 
 ## Repository Layout
 
-- `src/main.rs`: interactive GUI app (Macroquad)
-- `src/density_plot.rs`: lightweight time-series popup
+- `src/main.rs` - Interactive GUI app (Macroquad)
+- `src/density_plot.rs` - Lightweight time-series popup
+- `web-deploy/` - Production-ready web deployment files
+- `.cargo/config.toml` - WASM build configuration
  
 
 ## How It Works
