@@ -186,6 +186,7 @@ async fn main() {
     let mut logger = SimulationLogger::new();
     let mut step_counter: u64 = 0;
     let mut density_history = DensityHistory::new(1000);
+    let mut sim_speed: i32 = 1;
 
     let phase_diagram = PhaseDiagram::new(100, 100, (TEMP_MIN, TEMP_MAX), (CHEM_MIN, CHEM_MAX));
 
@@ -198,8 +199,10 @@ async fn main() {
             let _ = logger.save_csv(filename);
         }
 
-        lattice.step(temperature, chemical_potential);
-        step_counter += 1;
+        for _ in 0..sim_speed.max(0) {
+            lattice.step(temperature, chemical_potential);
+            step_counter += 1;
+        }
         let density = lattice.molecule_count() as f32 / (lattice.width * lattice.height) as f32;
         logger.record(step_counter, temperature, chemical_potential, density);
         density_history.push(density);
@@ -220,6 +223,7 @@ async fn main() {
                 &mut temperature,
                 &mut chemical_potential,
                 &mut lattice,
+                &mut sim_speed,
                 &density_history,
                 &phase_diagram,
                 density,
@@ -238,6 +242,7 @@ fn draw_egui_ui(
     temperature: &mut f32,
     chemical_potential: &mut f32,
     lattice: &mut Lattice,
+    sim_speed: &mut i32,
     density_history: &DensityHistory,
     phase_diagram: &PhaseDiagram,
     density: f32,
@@ -268,6 +273,15 @@ fn draw_egui_ui(
             ui.label("Chemical Potential (μ):");
             ui.add(egui::Slider::new(chemical_potential, CHEM_MIN..=CHEM_MAX)
                 .text("μ"));
+            
+            ui.add_space(5.0);
+            ui.label("Simulation Speed:");
+            ui.add(egui::Slider::new(sim_speed, 0..=20)
+                .text("steps/frame"));
+            
+            if *sim_speed == 0 {
+                ui.colored_label(egui::Color32::from_rgb(255, 150, 150), "⏸ PAUSED");
+            }
             
             ui.separator();
             
