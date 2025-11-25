@@ -133,13 +133,13 @@ impl PhaseDiagram {
             for j in 0..resolution_c {
                 let chem_potential = chem_potential_range.0 + (j as f32 / resolution_c as f32) * (chem_potential_range.1 - chem_potential_range.0);
                 
-                let mut max_f = -f32::INFINITY;
+                let mut min_f = f32::INFINITY;
                 let mut best_d = 0.0;
                 for k in 1..1000 {
                     let d = k as f32 / 1000.0;
                     let f = calculate_ftc(d, temp, chem_potential, 1.0);
-                    if f > max_f {
-                        max_f = f;
+                    if f < min_f {
+                        min_f = f;
                         best_d = d;
                     }
                 }
@@ -173,10 +173,8 @@ impl SimulationLogger {
 }
 
 fn calculate_ftc(d: f32, temp: f32, chem_potential: f32, j: f32) -> f32 {
-    if d <= 0.0 || d >= 1.0 || temp <= 0.0 { return -f32::INFINITY; }
-    let energy_term = (2.0 * j * d * d + chem_potential * d) / temp;
-    let entropy_term = d * d.ln() + (1.0 - d) * (1.0 - d).ln();
-    energy_term - entropy_term
+    if d <= 0.0 || d >= 1.0 || temp <= 0.0 { return f32::INFINITY; }
+    -2.0 * j * d * d / temp - chem_potential * d / temp + d * d.ln() + (1.0 - d) * (1.0 - d).ln()
 }
 
 #[macroquad::main("Phase Transition Simulation - egui")]
@@ -190,7 +188,7 @@ async fn main() {
     let mut density_history = DensityHistory::new(1000);
 
     let phase_diagram = PhaseDiagram::new(100, 100, (TEMP_MIN, TEMP_MAX), (CHEM_MIN, CHEM_MAX));
-    
+
     let mut frame_counter: u32 = 0;
     let frame_skip = 4;
 
@@ -413,7 +411,7 @@ fn draw_egui_ui(
             for i in 0..res_t {
                 for j in 0..res_c {
                     let density = phase_diagram.densities[i][j].clamp(0.0, 1.0);
-                    
+
                     let bright = phase_color_bright();
                     let dark = phase_color_dark();
                     let r = ((bright.r + density * (dark.r - bright.r)) * 255.0) as u8;
@@ -422,7 +420,7 @@ fn draw_egui_ui(
                     let color = egui::Color32::from_rgb(r, g, b);
                     
                     let x = rect.left() + i as f32 * cell_w;
-                    let y = rect.top() + j as f32 * cell_h;
+                    let y = rect.bottom() - (j + 1) as f32 * cell_h;
                     let cell_rect = egui::Rect::from_min_size(
                         egui::pos2(x, y),
                         egui::vec2(cell_w, cell_h)
@@ -433,7 +431,7 @@ fn draw_egui_ui(
             
             if t_frac >= 0.0 && t_frac <= 1.0 && c_frac >= 0.0 && c_frac <= 1.0 {
                 let marker_x = rect.left() + t_frac * rect.width();
-                let marker_y = rect.top() + c_frac * rect.height();
+                let marker_y = rect.bottom() - c_frac * rect.height();
                 painter.circle_filled(
                     egui::pos2(marker_x, marker_y),
                     5.0,
