@@ -8,12 +8,13 @@ fn phase_color_dark() -> Color { color_u8!(23, 43, 54, 255) }
 
 const GRID_WIDTH: usize = 200;
 const GRID_HEIGHT: usize = 200;
-const J: f32 = 1.0;
 
 const TEMP_MIN: f32 = 0.1;
 const TEMP_MAX: f32 = 1.5;
 const CHEM_MIN: f32 = -4.0;
 const CHEM_MAX: f32 = 0.0;
+const J_MIN: f32 = 0.0;
+const J_MAX: f32 = 2.0;
 
 #[derive(Clone, Copy, PartialEq)]
 enum Site {
@@ -44,7 +45,7 @@ impl Lattice {
         self.grid.iter().flatten().filter(|&&s| s == Site::Molecule).count()
     }
     
-    fn step(&mut self, temp: f32, chem_potential: f32) {
+    fn step(&mut self, temp: f32, chem_potential: f32, j: f32) {
         if temp <= 0.0 { return; }
         for _ in 0..(self.width * self.height) {
             let x = rand::gen_range(0, self.width);
@@ -63,8 +64,8 @@ impl Lattice {
             if self.grid[right][y] == Site::Molecule { neighbor_molecules += 1; }
             
             let delta_e = match current_site {
-                Site::Empty => -J * neighbor_molecules as f32,
-                Site::Molecule =>  J * neighbor_molecules as f32,
+                Site::Empty => -j * neighbor_molecules as f32,
+                Site::Molecule =>  j * neighbor_molecules as f32,
             };
             let delta_n = match current_site {
                 Site::Empty => 1.0,
@@ -136,7 +137,7 @@ impl PhaseDiagram {
                 let mut best_d = 0.0;
                 for k in 1..1000 {
                     let d = k as f32 / 1000.0;
-                    let f = calculate_ftc(d, temp, chem_potential);
+                    let f = calculate_ftc(d, temp, chem_potential, 1.0);
                     if f > max_f {
                         max_f = f;
                         best_d = d;
@@ -171,9 +172,9 @@ impl SimulationLogger {
     }
 }
 
-fn calculate_ftc(d: f32, temp: f32, chem_potential: f32) -> f32 {
+fn calculate_ftc(d: f32, temp: f32, chem_potential: f32, j: f32) -> f32 {
     if d <= 0.0 || d >= 1.0 || temp <= 0.0 { return -f32::INFINITY; }
-    let energy_term = (2.0 * J * d * d + chem_potential * d) / temp;
+    let energy_term = (2.0 * j * d * d + chem_potential * d) / temp;
     let entropy_term = d * d.ln() + (1.0 - d) * (1.0 - d).ln();
     energy_term - entropy_term
 }
@@ -182,14 +183,19 @@ fn calculate_ftc(d: f32, temp: f32, chem_potential: f32) -> f32 {
 async fn main() {
     let mut temperature: f32 = 1.2;
     let mut chemical_potential = -2.0;
+    let mut j: f32 = 1.0;
     let mut lattice = Lattice::new(GRID_WIDTH, GRID_HEIGHT);
     let mut logger = SimulationLogger::new();
     let mut step_counter: u64 = 0;
     let mut density_history = DensityHistory::new(1000);
 
     let phase_diagram = PhaseDiagram::new(100, 100, (TEMP_MIN, TEMP_MAX), (CHEM_MIN, CHEM_MAX));
+    
+    let mut frame_counter: u32 = 0;
+    let frame_skip = 4;
 
     loop {
+        frame_counter += 1;
         if is_key_pressed(KeyCode::Space) { 
             lattice = Lattice::new(GRID_WIDTH, GRID_HEIGHT); 
         }
@@ -198,8 +204,10 @@ async fn main() {
             let _ = logger.save_csv(filename);
         }
 
-        lattice.step(temperature, chemical_potential);
-        step_counter += 1;
+        if frame_counter % frame_skip == 0 {
+            lattice.step(temperature, chemical_potential, j);
+            step_counter += 1;
+        }
         let density = lattice.molecule_count() as f32 / (lattice.width * lattice.height) as f32;
         logger.record(step_counter, temperature, chemical_potential, density);
         density_history.push(density);
@@ -219,6 +227,7 @@ async fn main() {
                 egui_ctx,
                 &mut temperature,
                 &mut chemical_potential,
+                &mut j,
                 &mut lattice,
                 &density_history,
                 &phase_diagram,
@@ -229,15 +238,6 @@ async fn main() {
         });
 
         egui_macroquad::draw();
-        
-        let target_fps = 30.0;
-        let frame_time = 1.0 / target_fps;
-        let elapsed = get_frame_time();
-        if elapsed < frame_time {
-            let sleep_time = frame_time - elapsed;
-            std::thread::sleep(std::time::Duration::from_secs_f32(sleep_time));
-        }
-        
         next_frame().await
     }
 }
@@ -246,6 +246,7 @@ fn draw_egui_ui(
     ctx: &egui_macroquad::egui::Context,
     temperature: &mut f32,
     chemical_potential: &mut f32,
+    j: &mut f32,
     lattice: &mut Lattice,
     density_history: &DensityHistory,
     phase_diagram: &PhaseDiagram,
@@ -277,6 +278,11 @@ fn draw_egui_ui(
             ui.label("Chemical Potential (μ):");
             ui.add(egui::Slider::new(chemical_potential, CHEM_MIN..=CHEM_MAX)
                 .text("μ"));
+            
+            ui.add_space(5.0);
+            ui.label("Coupling Constant (J):");
+            ui.add(egui::Slider::new(j, J_MIN..=J_MAX)
+                .text("J"));
             
             ui.separator();
             
@@ -379,7 +385,7 @@ fn draw_egui_ui(
         .default_size([phase_width, phase_height])
         .resizable(true)
         .show(ctx, |ui| {
-            ui.label("Phase space visualization");
+            ui.label("Phase space visualization (computed for J = 1.0)");
             ui.label(format!("T: {:.2}, μ: {:.2}", *temperature, *chemical_potential));
             
             let (res_t, res_c) = phase_diagram.resolution;
@@ -455,7 +461,7 @@ fn draw_egui_ui(
             
             for i in 0..=steps {
                 let d = i as f32 / steps as f32;
-                let f = calculate_ftc(d, *temperature, *chemical_potential);
+                let f = calculate_ftc(d, *temperature, *chemical_potential, *j);
                 if f.is_finite() {
                     points.push((d, f));
                     if f > max_f { max_f = f; }
@@ -495,7 +501,7 @@ fn draw_egui_ui(
                     );
                 }
                 
-                let f_current = calculate_ftc(density, *temperature, *chemical_potential);
+                let f_current = calculate_ftc(density, *temperature, *chemical_potential, *j);
                 if f_current.is_finite() {
                     let marker_x = rect.left() + density * rect.width();
                     let marker_y = rect.bottom() - ((f_current - min_f) / range) * rect.height();
