@@ -9,12 +9,18 @@ fn phase_color_dark() -> Color { color_u8!(23, 43, 54, 255) }
 const GRID_WIDTH: usize = 200;
 const GRID_HEIGHT: usize = 200;
 
-const TEMP_MIN: f32 = 0.1;
-const TEMP_MAX: f32 = 1.5;
-const CHEM_MIN: f32 = -4.0;
+const TEMP_MIN: f32 = 0.01;
+const TEMP_MAX: f32 = 1.0;
+const CHEM_MIN: f32 = -2.0;
 const CHEM_MAX: f32 = 0.0;
+
 const J_MIN: f32 = 0.0;
 const J_MAX: f32 = 2.0;
+
+const Z: f32 = 4.0;
+fn j_mf_to_j0(j_mf: f32) -> f32 {
+    2.0 * j_mf / Z
+}
 
 #[derive(Clone, Copy, PartialEq)]
 enum Site {
@@ -45,8 +51,10 @@ impl Lattice {
         self.grid.iter().flatten().filter(|&&s| s == Site::Molecule).count()
     }
     
-    fn step(&mut self, temp: f32, chem_potential: f32, j: f32) {
+    fn step(&mut self, temp: f32, chem_potential: f32, j_mf: f32) {
         if temp <= 0.0 { return; }
+        let j0 = j_mf_to_j0(j_mf);
+    
         for _ in 0..(self.width * self.height) {
             let x = rand::gen_range(0, self.width);
             let y = rand::gen_range(0, self.height);
@@ -64,8 +72,8 @@ impl Lattice {
             if self.grid[right][y] == Site::Molecule { neighbor_molecules += 1; }
             
             let delta_e = match current_site {
-                Site::Empty => -j * neighbor_molecules as f32,
-                Site::Molecule =>  j * neighbor_molecules as f32,
+                Site::Empty => -j0 * neighbor_molecules as f32,
+                Site::Molecule =>  j0 * neighbor_molecules as f32,
             };
             let delta_n = match current_site {
                 Site::Empty => 1.0,
@@ -172,15 +180,19 @@ impl SimulationLogger {
     }
 }
 
-fn calculate_ftc(d: f32, temp: f32, chem_potential: f32, j: f32) -> f32 {
-    if d <= 0.0 || d >= 1.0 || temp <= 0.0 { return f32::INFINITY; }
-    -2.0 * j * d * d / temp - chem_potential * d / temp + d * d.ln() + (1.0 - d) * (1.0 - d).ln()
+fn calculate_ftc(d: f32, temp: f32, chem_potential: f32, j_mf: f32) -> f32 {
+    if d <= 0.0 || d >= 1.0 || temp <= 0.0 {
+        return f32::INFINITY;
+    }
+    let energy_term = -(j_mf * d * d) / temp - (chem_potential * d) / temp;
+    let entropy_term = d * d.ln() + (1.0 - d) * (1.0 - d).ln();
+    energy_term + entropy_term
 }
 
 #[macroquad::main("Phase Transition Simulation - egui")]
 async fn main() {
-    let mut temperature: f32 = 1.2;
-    let mut chemical_potential = -2.0;
+    let mut temperature: f32 = 0.7;
+    let mut chemical_potential: f32 = -1.0;
     let mut j: f32 = 1.0;
     let mut lattice = Lattice::new(GRID_WIDTH, GRID_HEIGHT);
     let mut logger = SimulationLogger::new();
