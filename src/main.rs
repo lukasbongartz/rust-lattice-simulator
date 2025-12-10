@@ -11,7 +11,10 @@ fn phase_color_dark() -> Color { color_u8!(23, 43, 54, 255) }
 
 const GRID_WIDTH: usize = 200;
 const GRID_HEIGHT: usize = 200;
-const J: f32 = 1.0;
+
+const J_MF: f32 = 1.0;
+const Z: f32 = 4.0;
+const J0: f32 = 2.0 * J_MF / Z; 
 
 #[derive(Clone, Copy, PartialEq)]
 enum Site {
@@ -62,8 +65,8 @@ impl Lattice {
             if self.grid[right][y] == Site::Molecule { neighbor_molecules += 1; }
             
             let delta_e = match current_site {
-                Site::Empty => -J * neighbor_molecules as f32,
-                Site::Molecule =>  J * neighbor_molecules as f32,
+                Site::Empty => -J0 * neighbor_molecules as f32,
+                Site::Molecule =>  J0 * neighbor_molecules as f32,
             };
             let delta_n = match current_site {
                 Site::Empty => 1.0,
@@ -187,8 +190,10 @@ impl SimulationLogger {
 }
 
 fn calculate_ftc(d: f32, temp: f32, chem_potential: f32) -> f32 {
-    if d <= 0.0 || d >= 1.0 || temp <= 0.0 { return -f32::INFINITY; }
-    let energy_term = (2.0 * J * d * d + chem_potential * d) / temp;
+    if d <= 0.0 || d >= 1.0 || temp <= 0.0 {
+        return -f32::INFINITY;
+    }
+    let energy_term = (J_MF * d * d + chem_potential * d) / temp;
     let entropy_term = d * d.ln() + (1.0 - d) * (1.0 - d).ln();
     energy_term - entropy_term
 }
@@ -234,16 +239,17 @@ fn draw_ftc_plot(rect: Rect, temp: f32, chem_potential: f32, current_density: f3
 
 #[macroquad::main("Phase Transition Simulation")]
 async fn main() {
-    let mut temperature: f32 = 1.2;
-    let mut chemical_potential = -2.0;
+
+    let mut temperature: f32 = 0.7;
+    let mut chemical_potential: f32 = -1.0;
     let mut lattice = Lattice::new(GRID_WIDTH, GRID_HEIGHT);
     let mut mode = Mode::UI;
     let mut logger = SimulationLogger::new();
     let mut step_counter: u64 = 0;
     let mut density_popup = DensityPopup::new(1000);
 
-    let phase_diagram = PhaseDiagram::new(100, 100, (0.1, 1.5), (-4.0, 0.0));
-
+    let phase_diagram = PhaseDiagram::new(100, 100, (0.01, 1.0), (-2.0, 0.0));
+   
     loop {
         if is_key_down(KeyCode::Up) { temperature += 0.01; }
         if is_key_down(KeyCode::Down) { temperature = (temperature - 0.01).max(0.01); }
