@@ -1,9 +1,12 @@
 [package]
-name = "phase_simulation"
-version = "0.1.0"
+name = "lattice_simulator"
+version = "1.0.0"
 edition = "2024"
-default-run = "phase_simulation"
+default-run = "lattice_simulator"
+description = "Lattice-gas / Ising phase-transition simulator (Rust + Macroquad)."
+license = "MIT"
 
 [dependencies]
 macroquad = "0.4.14"
 rand = "0.9.2"
+clap = { version = "4.5.9", features = ["derive"] }
