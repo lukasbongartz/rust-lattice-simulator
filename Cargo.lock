@@ -468,6 +468,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "lattice_simulator"
+version = "1.0.0"
+dependencies = [
+ "egui-macroquad",
+ "macroquad",
+]
+
+[[package]]
 name = "lewton"
 version = "0.9.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -762,14 +770,6 @@ dependencies = [
  "redox_syscall",
  "smallvec 1.15.1",
  "windows-link",
-]
-
-[[package]]
-name = "phase_simulation"
-version = "0.1.0"
-dependencies = [
- "egui-macroquad",
- "macroquad",
 ]
 
 [[package]]

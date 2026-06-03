@@ -189,7 +189,7 @@ fn calculate_ftc(d: f32, temp: f32, chem_potential: f32, j_mf: f32) -> f32 {
     energy_term + entropy_term
 }
 
-#[macroquad::main("Phase Transition Simulation - egui")]
+#[macroquad::main("Lattice Simulator")]
 async fn main() {
     let mut temperature: f32 = 0.7;
     let mut chemical_potential: f32 = -1.0;

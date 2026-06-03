@@ -1,6 +1,6 @@
-# Phase Simulation (Rust + Macroquad)
+# Lattice Simulator (Rust + Macroquad)
 
-A fast, interactive 2D lattice phase-transition simulator written in Rust. It visualizes a simple lattice gas/Ising-like model with controls for temperature and chemical potential, and renders an equilibrium phase diagram.
+An interactive 2D lattice-gas / Ising phase-transition simulator written in Rust for the paper [*Statistical mechanics for organic mixed conductors: phase transitions in a lattice gas*](https://arxiv.org/abs/2512.20727).
 
 - Interactive UI with real-time simulation
 - Phase diagram and mean-field free-energy plot
@@ -36,17 +36,8 @@ cargo run
 **Build for web:**
 ```bash
 cargo build --release --target wasm32-unknown-unknown
-cp target/wasm32-unknown-unknown/release/phase_simulation.wasm web-deploy/
+cp target/wasm32-unknown-unknown/release/lattice_simulator.wasm web-deploy/
 ```
-
-### Controls
-
-- **↑/↓** - Adjust Temperature
-- **←/→** - Adjust Chemical Potential
-- **Space** - Randomize Grid
-- **M** - Cycle display modes (UI → Phase diagram → Free-energy plot)
-- **D** - Toggle density popup
-- **S** - Save CSV snapshot
 
 ## Repository Layout
 
@@ -54,17 +45,16 @@ cp target/wasm32-unknown-unknown/release/phase_simulation.wasm web-deploy/
 - `src/density_plot.rs` - Lightweight time-series popup
 - `web-deploy/` - Production-ready web deployment files
 - `.cargo/config.toml` - WASM build configuration
- 
 
-## How It Works
+## Model
 
-- Lattice gas with nearest-neighbor interaction `J`
-- Glauber dynamics Monte Carlo updates
-- Mean-field functional:
+## Model
 
-  $$
-  f_{tc}(\rho) = \frac{2J\rho^2 + \mu\rho}{T} - \left[ \rho\ln\rho + (1-\rho)\ln(1-\rho) \right]
-  $$
+Lattice gas on a periodic 2D square lattice with nearest-neighbor coupling $J$ and chemical potential $\mu$, evolved by Metropolis Monte Carlo. The mean-field reduced free-energy density is
+
+$$
+f_{tc}(\rho) = \frac{2J\rho^2 + \mu\rho}{T} - \bigl[\rho\ln\rho + (1-\rho)\ln(1-\rho)\bigr].
+$$
 
 ## Data Export
 

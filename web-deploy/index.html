@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Phase Transition Simulation</title>
+    <title>Lattice Simulator</title>
     <meta name="description" content="Interactive 2D lattice gas model with grand canonical Monte Carlo simulation">
     <link rel="icon" href="data:,">
     <style>
@@ -91,7 +91,6 @@
             opacity: 0.8;
         }
 
-
         #canvas-container {
             position: fixed;
             top: 80px;
@@ -153,7 +152,7 @@
 <body>
     <div id="loading">
         <div class="spinner"></div>
-        <div id="loading-text">Loading Phase Simulation...</div>
+        <div id="loading-text">Loading Lattice Simulator...</div>
         <div id="loading-info">
             Compiling WebAssembly module<br>
             This may take a few seconds
@@ -167,14 +166,13 @@
     </div>
 
     <div id="header">
-        <h1>Phase Transition Simulation</h1>
+        <h1>Lattice Simulator</h1>
         <p>Interactive 2D Lattice Gas Model with Grand Canonical Monte Carlo</p>
     </div>
 
     <div id="canvas-container">
         <canvas id="glcanvas" tabindex="0"></canvas>
     </div>
-
 
     <div class="footer">
         Built with Rust + WebAssembly
@@ -196,7 +194,7 @@
             }
 
             try {
-                load("phase_simulation.wasm");
+                load("lattice_simulator.wasm");
                 setTimeout(() => loadingScreen.classList.add("hidden"), 1000);
             } catch(error) {
                 errorMessage.style.display = "block";
