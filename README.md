@@ -1,6 +1,6 @@
 # Lattice Simulator (Rust + Macroquad)
 
-An interactive 2D lattice-gas / Ising phase-transition simulator written in Rust for the paper [*Statistical mechanics for organic mixed conductors: phase transitions in a lattice gas*](https://arxiv.org/abs/2512.20727).
+An interactive 2D lattice-gas / Ising phase-transition simulator written in Rust for the paper [*Statistical mechanics for organic mixed conductors: Phase transitions in a lattice gas*](https://doi.org/10.1103/gq38-byzg), Phys. Rev. E **113**, 065424.
 
 - Interactive UI with real-time simulation
 - Phase diagram and mean-field free-energy plot
